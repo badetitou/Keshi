@@ -11,6 +11,11 @@ Class {
 KSRxMatcherTest >> testMatches [
 
 	self assert: ('a.*?com' asKSRegex matches: 'a is a test com blah blah').
+	self assert: ('^(?:\w+:)?\/\/([^\s\.]+\.\S{2}|localhost[\:?\d]*)\S*$' asKSRegex matches: 'https://www.thisisatest.com/bhal').
+	self deny: ('^(?:\w+:)?\/\/([^\s\.]+\.\S{2}|localhost[\:?\d]*)\S*$' asKSRegex matches: 'www.thisisatest.com/bhal').
+	
+
+
 ]
 
 { #category : #test }
