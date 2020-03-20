@@ -41,18 +41,43 @@ KSRxMatcher >> parse: aString [
 ]
 
 { #category : #'as yet unclassified' }
+KSRxMatcher >> tmpMatchesZone [
+	^ FileLocator temp asFileReference / 'keshimatches.txt'
+]
+
+{ #category : #'as yet unclassified' }
+KSRxMatcher >> tmpStreamZone [
+	^ FileLocator temp asFileReference / 'keshistream.txt'
+]
+
+{ #category : #'as yet unclassified' }
+KSRxMatcher >> tmpZone [
+	^ FileLocator temp asFileReference / 'keshistream' 
+]
+
+{ #category : #'as yet unclassified' }
 KSRxMatcher >> tryMatch [
 	"Match thyself against the current stream using perl."
-	| command result | 
+
+	| command result |
 	"use an environment variable for the regex - simplifies quoting"
 	OSEnvironment current setEnv: 'keshiregex' value: regex.
 	"save the stream to search to a file to be used in perl"
-	'/tmp/keshistream' asFileReference ensureDelete; writeStreamDo: [ :fileStream | fileStream nextPutAll: stream contents ].
+	self tmpStreamZone
+		ensureDelete;
+		writeStreamDo: [ :fileStream | fileStream nextPutAll: stream contents ].
 	"https://www.tutorialspoint.com/perl/perl_regular_expressions.htm"
-	command := 'perl -0777 -n ' ,
-		"'-e ''print ""$ENV{keshiregex}\n"";'' ' ,"
-		'-e ''while(m/$ENV{keshiregex}/mcg){print "$&\n";}'' /tmp/keshistream > /tmp/keshimatches'.
+	command := 'perl '
+		,
+			(OSPlatform current isWindows
+				ifTrue: [ self windowsCmd ]
+				ifFalse: [ ' -0777 -n -e ''while(m/$ENV{keshiregex}/mcg){print ""$&\n"";}'' ""' , self tmpStreamZone fullName , '"" > ""' , self tmpMatchesZone fullName , '""' ]).
 	result := LibC runCommand: command.
-	result = 0 ifFalse: [ 0 halt. ].
-	^ '/tmp/keshimatches' asFileReference contents size ~= 0.
+	result = 0 ifFalse: [ 0 halt ].
+	^ self tmpMatchesZone contents size ~= 0
+]
+
+{ #category : #'as yet unclassified' }
+KSRxMatcher >> windowsCmd [
+	^ '-n -e "while(m/%keshiregex%/mcg){print $&^\n;}" "', (self tmpStreamZone fullName),'" > "', ((self tmpMatchesZone fullName), '"')
 ]
